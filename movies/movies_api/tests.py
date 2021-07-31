@@ -2,7 +2,9 @@ from django.test import TestCase
 from unittest import mock
 
 from .movie_requests import *
-from .models import Key
+from .models import Key, Movies, Movie
+
+kevin_key = Key('kevin', 'hart')
 
 
 class RequestsTests(TestCase):
@@ -20,14 +22,12 @@ class RequestsTests(TestCase):
 class KeyTests(TestCase):
 
     def test_keys_with_same_firstname_lastname_are_equal(self):
-        key_1 = Key('kevin', 'hart')
         key_2 = Key('kevin', 'hart')
-        self.assertEqual(key_1, key_2, "Keys with same firstname and lastname need to be equal")
+        self.assertEqual(kevin_key, key_2, "Keys with same firstname and lastname need to be equal")
 
     def test_keys_with_different_firstname_lastname_are_not_equal(self):
-        key_1 = Key('kevin', 'hart')
         key_2 = Key('brad', 'pitt')
-        self.assertNotEqual(key_1, key_2, "Keys with different firstname and lastname need to be unequal")
+        self.assertNotEqual(kevin_key, key_2, "Keys with different firstname and lastname need to be unequal")
 
 
 class RequestHandlerTests(TestCase):
@@ -44,27 +44,43 @@ class RequestHandlerTests(TestCase):
     @mock.patch('movies_api.movie_requests.ThirdParty')
     def test_should_lookup_details_from_third_party_if_not_in_storage(self, storage, third_party):
         # given
-        key = Key('kevin', 'hart')
         handler = RequestHandler.get_instance(storage, third_party)
         storage.storage_lookup.return_value = None
         # third_party.api_lookup(key).return_value = HttpResponse('third party api response')
 
         # when
-        handler.get_details(key)
+        handler.get_details(kevin_key)
 
         # then
-        third_party.api_lookup.assert_called_with(key)
+        third_party.api_lookup.assert_called_with(kevin_key)
 
     @mock.patch('movies_api.movie_requests.StorageSpi')
     @mock.patch('movies_api.movie_requests.ThirdParty')
     def test_should_not_lookup_details_from_third_party_if_in_storage(self, storage, third_party):
         # given
-        key = Key('kevin', 'hart')
         handler = RequestHandler.get_instance(storage, third_party)
         storage.storage_lookup.return_value = HttpResponse('storage response')
 
         # when
-        handler.get_details(key)
+        handler.get_details(kevin_key)
 
         # then
         third_party.api_lookup.assert_not_called()
+
+
+class MoviesTests(TestCase):
+
+    def test_should_add_movies(self):
+        movies = Movies(artist_name=kevin_key)
+        test_movies = [
+            Movie('title_1', '2013-07-03T07:00:00Z', 'Comedy'),
+            Movie('title_2', '2017-07-03T07:00:00Z', 'Drama'),
+            Movie('title_3', '2020-07-03T07:00:00Z', 'Thriller')
+        ]
+
+        for test_movie in test_movies:
+            movies.add(test_movie)
+
+        # todo: Test this properly
+        details = movies.details()
+        print(details)

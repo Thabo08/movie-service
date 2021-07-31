@@ -1,9 +1,10 @@
 """ This file contains the functionality to make requests and how to handle responses and errors """
+import json
 
 import requests
 from django.http import HttpResponse
 from requests import Response
-from .models import Key
+from .models import Key, Movies, Movie
 
 
 class StorageSpi:
@@ -12,6 +13,9 @@ class StorageSpi:
     def storage_lookup(self, key: Key):
         return None
 
+    def save(self, movies: Movies):
+        pass
+
 
 class ThirdParty:
     """ This class uses a third party API to lookup the requested information """
@@ -19,8 +23,21 @@ class ThirdParty:
     def __init__(self):
         pass
 
-    def api_lookup(self, key: Key):
-        return None
+    def api_lookup(self, key: Key) -> Movies:
+        movies = Movies(artist_name=key)
+        firstname = key.get_firstname()
+        lastname = key.get_lastname()
+        response = requests.get(f'https://itunes.apple.com/search?term={firstname}+{lastname}&entity=movie')
+        if response.ok:
+            api_movies = json.loads(response.content)['results']
+            count = len(api_movies)
+            print(f"Found '{count}' movies for artist: {key.__str__()}")
+            for api_movie in api_movies:
+                track_name = api_movie['trackName']
+                release_date = api_movie['releaseDate']
+                genre = api_movie['primaryGenreName']
+                movies.add(Movie(track_name=track_name, release_date=release_date, primary_genre_name=genre))
+        return movies.details()
 
 
 class ResponseBuilder:
@@ -65,6 +82,12 @@ class RequestHandler:
         details = self.storage.storage_lookup(key)
         if details is None:
             print(f"info: Looking up details for artist '{key.__str__()}' from 3rd party api")
-            return self.third_party.api_lookup(key)
-        # self.third_party.api_lookup(key)
-        return details
+            details = self.third_party.api_lookup(key)
+            self.storage.save(details)
+        return HttpResponse(details)
+
+
+# todo: Delete this - only for testing purposes
+def test_helper(key):
+    handler = RequestHandler.get_instance(StorageSpi(), ThirdParty())
+    return handler.get_details(key)
