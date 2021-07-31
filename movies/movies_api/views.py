@@ -2,6 +2,8 @@ from django.http import HttpResponse
 import requests
 import json
 
+from .models import Key
+
 
 def index(request):
     return HttpResponse("Hello, world. You're at the polls index.")
@@ -13,6 +15,8 @@ def actor_movies(request, firstname, lastname):
 
 
 def artist_movies(firstname, lastname):
+    key = Key(firstname, lastname)
+    print(f'Looking up details for artist: {key.__str__()}')
     response = requests.get(f'https://itunes.apple.com/search?term={firstname}+{lastname}&entity=movie')
     term = f'{firstname} {lastname}'
     all_movies = {term: []}
