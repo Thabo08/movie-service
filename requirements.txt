@@ -1,3 +1,5 @@
 certifi==2021.5.30
 django==3.2
 requests==2.25.1
+pymemcache==3.5.0
+pymongo==3.11.4

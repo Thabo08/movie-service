@@ -42,6 +42,9 @@ class Key:
     def get_lastname(self):
         return self.lastname
 
+    def as_key(self):
+        return f'{self.firstname}_{self.lastname}'
+
 
 class Movie:
     """ This holds details about a movie for an artist """

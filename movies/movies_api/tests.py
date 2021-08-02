@@ -32,6 +32,10 @@ class KeyTests(TestCase):
 
 class RequestHandlerTests(TestCase):
 
+    def __init__(self, *args, **kwargs):
+        super(RequestHandlerTests, self).__init__(*args, **kwargs)
+        self.mock_details = Movies(artist_name=kevin_key).details()
+
     @mock.patch('movies_api.movie_requests.StorageSpi')
     @mock.patch('movies_api.movie_requests.ThirdParty')
     def test_should_not_create_another_instance_if_already_exist(self, storage, third_party):
@@ -46,20 +50,20 @@ class RequestHandlerTests(TestCase):
         # given
         handler = RequestHandler.get_instance(storage, third_party)
         storage.storage_lookup.return_value = None
-        # third_party.api_lookup(key).return_value = HttpResponse('third party api response')
 
         # when
         handler.get_details(kevin_key)
 
         # then
         third_party.api_lookup.assert_called_with(kevin_key)
+        storage.save_details.assert_called()  # todo: Test that this is called with the correct details
 
     @mock.patch('movies_api.movie_requests.StorageSpi')
     @mock.patch('movies_api.movie_requests.ThirdParty')
     def test_should_not_lookup_details_from_third_party_if_in_storage(self, storage, third_party):
         # given
         handler = RequestHandler.get_instance(storage, third_party)
-        storage.storage_lookup.return_value = HttpResponse('storage response')
+        storage.storage_lookup.return_value = self.mock_details
 
         # when
         handler.get_details(kevin_key)
