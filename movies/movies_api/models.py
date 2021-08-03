@@ -49,7 +49,7 @@ class Key:
         return self.genre
 
     def get_release_date(self):
-        return self.release_date
+        return int(self.release_date)
 
     def as_key(self):
         return self.key

@@ -13,18 +13,6 @@ test_movies = [
 ]
 
 
-class RequestsTests(TestCase):
-
-    @mock.patch('movies_api.movie_requests.CacheSpi')
-    @mock.patch('movies_api.movie_requests.ResponseBuilder')
-    def test_should_return_client_error_for_invalid_requests(self, storage, response):
-        response.request_response("test").status_code.return_value = 403
-        storage.contains.return_value = False
-
-        data = get_data(storage, response)
-        self.assertContains(data, 'Error handler content', status_code=403)
-
-
 class KeyTests(TestCase):
 
     def test_keys_with_same_firstname_lastname_are_equal(self):
@@ -131,19 +119,18 @@ class RequestHandlerTests(TestCase):
         self.assertTrue(len(details.all_movies()) == 1)
         self.assertTrue(details.all_movies()[0]['name'] == 'title_1')
 
-# class MoviesTests(TestCase):
-#
-#     def test_should_add_movies(self):
-#         movies = Movies(artist_name=kevin_key)
-#         test_movies = [
-#             Movie('title_1', '2013-07-03T07:00:00Z', 'Comedy'),
-#             Movie('title_2', '2017-07-03T07:00:00Z', 'Drama'),
-#             Movie('title_3', '2020-07-03T07:00:00Z', 'Thriller')
-#         ]
-#
-#         for test_movie in test_movies:
-#             movies.add(test_movie)
-#
-#         # todo: Test this properly
-#         details = movies.details()
-#         print(details)
+
+class MoviesTests(TestCase):
+
+    def test_should_add_movies(self):
+        movies = Movies(artist_name=kevin_key)
+        test_movies = [
+            Movie('title_1', '2013-07-03T07:00:00Z', 'Comedy'),
+            Movie('title_2', '2017-07-03T07:00:00Z', 'Drama'),
+            Movie('title_3', '2020-07-03T07:00:00Z', 'Thriller')
+        ]
+
+        for test_movie in test_movies:
+            movies.add(test_movie)
+
+        self.assertTrue(len(movies.all_movies()) == 3)

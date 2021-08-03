@@ -5,25 +5,9 @@ import requests
 import pickle
 from django.http import HttpResponse
 from django.core.cache import caches
-from requests import Response
 from .models import Key, Movies, Movie
 from bson.binary import Binary
 from bson.binary import USER_DEFINED_SUBTYPE
-
-
-class ResponseBuilder:
-
-    def request_response(self, url) -> Response:
-        return requests.get(url)
-
-
-def get_data(storage, response: ResponseBuilder) -> HttpResponse:
-    if storage.contains(""):
-        return HttpResponse()
-    else:
-        #        response.request_response("test").status_code.return_value = 403
-        status = response.request_response("test").status_code
-        return HttpResponse('Error handler content', status=403)
 
 
 def get_storage(in_memory):
@@ -105,27 +89,25 @@ def _filtered(movies, key):
         filtered_movies = Movies(key)
         if key.filter_by_genre_only():
             for movie in movies.all_movies():
-                track_name = movie['name']
-                release_date = movie['release date']
-                genre = movie['genre']
+                track_name, release_date, genre = _details(movie)
                 if genre.lower() == key.get_genre().lower():
                     filtered_movies.add(Movie(track_name, release_date, genre))
         elif key.filter_by_release_date_only():
             for movie in movies.all_movies():
-                track_name = movie['name']
-                release_date = movie['release date']
-                genre = movie['genre']
-                if release_date == int(key.get_release_date()):
+                track_name, release_date, genre = _details(movie)
+                if release_date == key.get_release_date():
                     filtered_movies.add(Movie(track_name, release_date, genre))
         else:
             # filter by both genre and release date
             for movie in movies.all_movies():
-                track_name = movie['name']
-                release_date = movie['release date']
-                genre = movie['genre']
-                if genre.lower() == key.get_genre().lower() and release_date == int(key.get_release_date()):
+                track_name, release_date, genre = _details(movie)
+                if genre.lower() == key.get_genre().lower() and release_date == key.get_release_date():
                     filtered_movies.add(Movie(track_name, release_date, genre))
         return filtered_movies
+
+
+def _details(movie):
+    return movie['name'], movie['release date'], movie['genre']
 
 
 class RequestHandler:
