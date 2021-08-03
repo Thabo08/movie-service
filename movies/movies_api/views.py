@@ -3,7 +3,7 @@ import requests
 import json
 
 from .models import Key
-from .movie_requests import test_helper
+from .movie_requests import get_response
 
 
 def index(request):
@@ -13,7 +13,7 @@ def index(request):
 def actor_movies(request):
     try:
         key = validate_request(request)
-        return test_helper(key)
+        return get_response(key)
     except ValueError:
         return HttpResponse('Bad request', 400)
 

@@ -2,6 +2,7 @@ import json
 from django.test import TestCase
 from unittest import mock
 
+
 from .movie_requests import *
 from .models import Key, Movies, Movie
 
@@ -66,7 +67,7 @@ class RequestHandlerTests(TestCase):
         # given
         in_mem_cache = CacheSpi(in_memory=True)
         in_mem_cache.save_movies(kevin_key, self.mock_details)
-        handler = RequestHandler(in_mem_cache, ThirdParty())
+        handler = RequestHandler(in_mem_cache, ThirdParty(None))
 
         # when
         details = handler.get_details(kevin_key)
@@ -81,7 +82,7 @@ class RequestHandlerTests(TestCase):
                              genre='Drama')
         in_mem_cache = CacheSpi(in_memory=True)
         in_mem_cache.save_movies(key_with_genre, self.movies)
-        handler = RequestHandler(in_mem_cache, ThirdParty())
+        handler = RequestHandler(in_mem_cache, ThirdParty(None))
 
         # when
         details = handler.get_details(key_with_genre)
@@ -96,7 +97,7 @@ class RequestHandlerTests(TestCase):
                                     release_date=2020)
         in_mem_cache = CacheSpi(in_memory=True)
         in_mem_cache.save_movies(key_with_release_date, self.movies)
-        handler = RequestHandler(in_mem_cache, ThirdParty())
+        handler = RequestHandler(in_mem_cache, ThirdParty(None))
 
         # when
         details = handler.get_details(key_with_release_date)
@@ -111,13 +112,48 @@ class RequestHandlerTests(TestCase):
                                               genre='Comedy', release_date=2013)
         in_mem_cache = CacheSpi(in_memory=True)
         in_mem_cache.save_movies(key_with_genre_and_release_date, self.movies)
-        handler = RequestHandler(in_mem_cache, ThirdParty())
+        handler = RequestHandler(in_mem_cache, ThirdParty(None))
 
         # when
         details = handler.get_details(key_with_genre_and_release_date)
 
         self.assertTrue(len(details.all_movies()) == 1)
         self.assertTrue(details.all_movies()[0]['name'] == 'title_1')
+
+
+class MockResponse:
+    def __init__(self, json_data, status_code):
+        self.json_data = json_data
+        self.status_code = status_code
+        self.ok = status_code < 400
+        self.content = json_data
+
+
+class ThirdPartyTests(TestCase):
+
+    @mock.patch('movies_api.movie_requests.RequestResponse')
+    def test_returns_results_when_request_ok(self, request_response):
+        # given
+        request_response.response.return_value = MockResponse(json.dumps({"results": [
+            {"trackName": "title_1", "releaseDate": 2020, "primaryGenreName": 'Drama'}
+        ]}), 200)
+
+        # when
+        third_party = ThirdParty(request_response)
+
+        # then
+        self.assertIsNotNone(third_party.api_lookup(kevin_key))
+
+    @mock.patch('movies_api.movie_requests.RequestResponse')
+    def test_throws_value_error_if_response_not_ok(self, request_response):
+        # given
+        request_response.response.return_value = MockResponse({}, 400)
+
+        # when
+        third_party = ThirdParty(request_response)
+
+        # then
+        self.assertRaises(ValueError, third_party.api_lookup, kevin_key)
 
 
 class MoviesTests(TestCase):

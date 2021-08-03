@@ -51,34 +51,46 @@ class CacheSpi:
         self.storage = get_storage(in_memory)
 
     def storage_lookup(self, key: Key):
-        return self.storage.get(key)
+        try:
+            return self.storage.get(key)
+        except Exception:
+            raise
 
     def save_movies(self, key: Key, movies):
         print(f"info: Saving movies for artist '{key.__str__()}' in the cache and the database")
         self.storage.put(key, movies)
 
 
+class RequestResponse:
+    """ This class does the actual api request and returns the response to the caller """
+    def __init__(self):
+        self.target_path = "https://itunes.apple.com/search?term={}+{}&entity=movie"
+
+    def response(self, key: Key):
+        return requests.get(self.target_path.format(key.get_firstname(), key.get_lastname()))
+
+
 class ThirdParty:
     """ This class uses a third party API to lookup the requested information """
 
-    def __init__(self):
-        pass
+    def __init__(self, request_response: RequestResponse):
+        self.request_response = request_response
 
     def api_lookup(self, key: Key) -> Movies:
+        response = self.request_response.response(key)
         movies = Movies(artist_name=key)
-        firstname = key.get_firstname()
-        lastname = key.get_lastname()
-        # todo : Abstract this out to improve testability
-        response = requests.get(f'https://itunes.apple.com/search?term={firstname}+{lastname}&entity=movie')
         if response.ok:
             api_movies = json.loads(response.content)['results']
             count = len(api_movies)
-            print(f"Found '{count}' movies for artist: {key.__str__()}")
+            print(f"Found '{count}' movies for artist: {key}")
             for api_movie in api_movies:
                 track_name = api_movie['trackName']
                 release_date = api_movie['releaseDate']
                 genre = api_movie['primaryGenreName']
                 movies.add(Movie(track_name=track_name, release_date=release_date, primary_genre_name=genre))
+        else:
+            print(f"error: Cannot get movies for {key}")
+            raise ValueError(f"Cannot get movies for {key}")
         return movies
 
 
@@ -121,17 +133,31 @@ class RequestHandler:
         """ This returns the details being looked up for based on the provided key
             :param key: The lookup key
         """
-        movies = self.storage.storage_lookup(key)
+        try:
+            movies = self.storage.storage_lookup(key)
+        except Exception:
+            return HttpResponse("Internal server error", 500)
+
         if movies is None:
-            print(f"info: Looking up details for artist '{key.__str__()}' from 3rd party api")
-            movies = self.third_party.api_lookup(key)
-            self.storage.save_movies(key, movies)
+            try:
+                print(f"info: Looking up details for artist '{key}' from 3rd party api")
+                movies = self.third_party.api_lookup(key)
+                self.storage.save_movies(key, movies)
+            except ValueError:
+                return HttpResponse(f"Resource not found for {key}", 404)
         else:
-            print(f"info: Returning details for artist '{key.__str__()}' from storage")
+            print(f"info: Returning details for artist '{key}' from storage")
         return _filtered(movies, key)
 
 
-# todo: Delete this - only for testing purposes
-def test_helper(key):
-    handler = RequestHandler(CacheSpi(in_memory=False), ThirdParty())
-    return HttpResponse(handler.get_details(key).details())
+request_response = RequestResponse()
+third_party = ThirdParty(request_response)
+cache_spi = CacheSpi(in_memory=False)
+
+
+def get_response(key):
+    try:
+        handler = RequestHandler(cache_spi, third_party)
+        return HttpResponse(handler.get_details(key).details())
+    except AttributeError:
+        return HttpResponse("Internal server error", 500)
