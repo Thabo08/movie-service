@@ -9,12 +9,15 @@ from .models import Key, Movies, Movie
 from bson.binary import Binary
 from bson.binary import USER_DEFINED_SUBTYPE
 
+import logging
+logger = logging.getLogger(__name__)
+
 
 def get_storage(in_memory):
     if in_memory:
-        print("info: Using in memory storage")
+        logger.info("Using in memory storage")
         return InMemoryStorage()
-    print("info: Using in real storage")
+    logger.info("Using in real storage")
     return MemCached()
 
 
@@ -57,7 +60,7 @@ class CacheSpi:
             raise
 
     def save_movies(self, key: Key, movies):
-        print(f"info: Saving movies for artist '{key.__str__()}' in the cache and the database")
+        logger.info(f"Saving movies for artist '{key.__str__()}' in the cache and the database")
         self.storage.put(key, movies)
 
 
@@ -82,14 +85,14 @@ class ThirdParty:
         if response.ok:
             api_movies = json.loads(response.content)['results']
             count = len(api_movies)
-            print(f"Found '{count}' movies for artist: {key}")
+            logger.debug(f"Found '{count}' movies for artist: {key}")
             for api_movie in api_movies:
                 track_name = api_movie['trackName']
                 release_date = api_movie['releaseDate']
                 genre = api_movie['primaryGenreName']
                 movies.add(Movie(track_name=track_name, release_date=release_date, primary_genre_name=genre))
         else:
-            print(f"error: Cannot get movies for {key}")
+            logger.error(f"Cannot get movies for {key}")
             raise ValueError(f"Cannot get movies for {key}")
         return movies
 
@@ -140,13 +143,13 @@ class RequestHandler:
 
         if movies is None:
             try:
-                print(f"info: Looking up details for artist '{key}' from 3rd party api")
+                logger.info(f"Looking up details for artist '{key}' from 3rd party api")
                 movies = self.third_party.api_lookup(key)
                 self.storage.save_movies(key, movies)
             except ValueError:
                 return HttpResponse(f"Resource not found for {key}", 404)
         else:
-            print(f"info: Returning details for artist '{key}' from storage")
+            logger.info(f"Returning details for artist '{key}' from storage")
         return _filtered(movies, key)
 
 

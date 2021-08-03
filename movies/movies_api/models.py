@@ -3,6 +3,10 @@ import json
 from django.db import models
 import datetime
 
+import logging
+logger = logging.getLogger(__name__)
+
+
 def equality_tester(self_, clazz, other):
     if isinstance(other, clazz):
         for var in vars(self_):
@@ -99,7 +103,7 @@ class Movies:
         self.movies = {self.key: []}  # container that holds all the movies
 
     def add(self, movie: Movie):
-        print(f"Info: Adding movie '{movie.__str__()}' for artist '{self.key.__str__()}'")
+        logger.debug(f"Adding movie '{movie.__str__()}' for artist '{self.key.__str__()}'")
         self.movies.get(self.key).append(movie.details())
 
     def all_movies(self):
@@ -114,5 +118,5 @@ def extract_release_date(as_string):
         year, _, _ = as_string.split('T')[0].split('-')
         return int(year)
     except (AttributeError, ValueError):
-        # todo: do this better
+        # todo: this can be handled better
         return int(as_string)

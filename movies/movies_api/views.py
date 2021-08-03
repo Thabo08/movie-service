@@ -4,6 +4,8 @@ import json
 
 from .models import Key
 from .movie_requests import get_response
+import logging
+logger = logging.getLogger(__name__)
 
 
 def index(request):
@@ -13,6 +15,7 @@ def index(request):
 def actor_movies(request):
     try:
         key = validate_request(request)
+        logger.info(f"Processing http request {request.__str__()}")
         return get_response(key)
     except ValueError:
         return HttpResponse('Bad request', 400)
