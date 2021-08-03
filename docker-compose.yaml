@@ -1,8 +1,8 @@
-version: "3.8"
+version: "3.9"
 services:
   memcached:
     image: "memcached:alpine3.14"
-    container_name: memcached
+    container_name: "memcached"
     ports:
       - "11211:11211"
     expose:
@@ -11,7 +11,6 @@ services:
       - db_network
   movies_service:
     build: .
-#    image: "movies:latest"
     container_name: "movies"
     ports:
       - "8000:8000"

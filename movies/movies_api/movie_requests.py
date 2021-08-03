@@ -31,14 +31,14 @@ def get_storage(in_memory):
         print("info: Using in memory storage")
         return InMemoryStorage()
     print("info: Using in real storage")
-    return RealStorage()
+    return MemCached()
 
 
 def to_binary(movies: Movies):
     return Binary(pickle.dumps(movies), USER_DEFINED_SUBTYPE)
 
 
-class RealStorage:
+class MemCached:
     def __init__(self):
         self.memcached = caches['default']
 
@@ -50,7 +50,7 @@ class RealStorage:
 
 
 class InMemoryStorage:
-    """ This uses a python dictionary for storage. Mainly used for testing """
+    """ This uses a python dictionary for storage. Mainly used for testing without starting up memcached """
     def __init__(self):
         self.storage = {}
 
@@ -61,7 +61,7 @@ class InMemoryStorage:
         return self.storage.get(key)
 
 
-class StorageSpi:
+class CacheSpi:
     """ This is a service provider interface for the storage"""
     def __init__(self, in_memory=False):
         self.storage = get_storage(in_memory)
@@ -69,9 +69,9 @@ class StorageSpi:
     def storage_lookup(self, key: Key):
         return self.storage.get(key)
 
-    def save_details(self, key: Key, details):
-        print(f"info: Saving details for artist '{key.__str__()}' in the cache and the database")
-        self.storage.put(key, details)
+    def save_movies(self, key: Key, movies):
+        print(f"info: Saving movies for artist '{key.__str__()}' in the cache and the database")
+        self.storage.put(key, movies)
 
 
 class ThirdParty:
@@ -95,44 +95,61 @@ class ThirdParty:
                 release_date = api_movie['releaseDate']
                 genre = api_movie['primaryGenreName']
                 movies.add(Movie(track_name=track_name, release_date=release_date, primary_genre_name=genre))
-        return movies.details()
+        return movies
+
+
+def _filtered(movies, key):
+    if not key.apply_filter():
+        return movies
+    else:
+        filtered_movies = Movies(key)
+        if key.filter_by_genre_only():
+            for movie in movies.all_movies():
+                track_name = movie['name']
+                release_date = movie['release date']
+                genre = movie['genre']
+                if genre.lower() == key.get_genre().lower():
+                    filtered_movies.add(Movie(track_name, release_date, genre))
+        elif key.filter_by_release_date_only():
+            for movie in movies.all_movies():
+                track_name = movie['name']
+                release_date = movie['release date']
+                genre = movie['genre']
+                if release_date == int(key.get_release_date()):
+                    filtered_movies.add(Movie(track_name, release_date, genre))
+        else:
+            # filter by both genre and release date
+            for movie in movies.all_movies():
+                track_name = movie['name']
+                release_date = movie['release date']
+                genre = movie['genre']
+                if genre.lower() == key.get_genre().lower() and release_date == int(key.get_release_date()):
+                    filtered_movies.add(Movie(track_name, release_date, genre))
+        return filtered_movies
 
 
 class RequestHandler:
-    """ This singleton class handles requests and responses. It is the entry and exit point of the api """
-    __instance = None
-
-    @staticmethod
-    def get_instance(storage: StorageSpi, third_party: ThirdParty):
-        if RequestHandler.__instance is None:
-            print("debug: Creating new request handler")
-            RequestHandler(storage, third_party)
-        return RequestHandler.__instance
+    """ This class handles requests and responses. It is the entry and exit point of the api """
 
     def __init__(self, storage, third_party):
         self.storage = storage
         self.third_party = third_party
 
-        if RequestHandler.__instance is not None:
-            raise Exception("Instance of this class cannot be created again! Singleton violation!")
-        else:
-            RequestHandler.__instance = self
-
-    def get_details(self, key) -> HttpResponse:
+    def get_details(self, key):
         """ This returns the details being looked up for based on the provided key
             :param key: The lookup key
         """
-        details = self.storage.storage_lookup(key)
-        if details is None:
+        movies = self.storage.storage_lookup(key)
+        if movies is None:
             print(f"info: Looking up details for artist '{key.__str__()}' from 3rd party api")
-            details = self.third_party.api_lookup(key)
-            self.storage.save_details(key, details)
+            movies = self.third_party.api_lookup(key)
+            self.storage.save_movies(key, movies)
         else:
             print(f"info: Returning details for artist '{key.__str__()}' from storage")
-        return HttpResponse(details)
+        return _filtered(movies, key)
 
 
 # todo: Delete this - only for testing purposes
 def test_helper(key):
-    handler = RequestHandler.get_instance(StorageSpi(in_memory=True), ThirdParty())
-    return handler.get_details(key)
+    handler = RequestHandler(CacheSpi(in_memory=False), ThirdParty())
+    return HttpResponse(handler.get_details(key).details())

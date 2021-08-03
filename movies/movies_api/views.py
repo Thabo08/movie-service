@@ -23,7 +23,6 @@ def validate_request(request):
     lastname = request.GET.get('lastname')
     genre = request.GET.get('genre', 'all')
     release_date = request.GET.get('releaseDate', 9999)
-
     if firstname is None or lastname is None:
         raise ValueError('firstname and lastname need to be provided')
 

@@ -1,7 +1,7 @@
 import json
 
 from django.db import models
-
+import datetime
 
 def equality_tester(self_, clazz, other):
     if isinstance(other, clazz):
@@ -28,6 +28,7 @@ class Key:
         self.genre = genre
         self.release_date = release_date
         self.key = f'{firstname}_{lastname}'
+        self.filter = genre != 'all' or release_date != 9999
 
     def __eq__(self, other):
         return equality_tester(self, Key, other)
@@ -53,6 +54,15 @@ class Key:
     def as_key(self):
         return self.key
 
+    def apply_filter(self):
+        return self.filter
+
+    def filter_by_genre_only(self):
+        return self.filter and self.genre != 'all' and self.release_date == 9999
+
+    def filter_by_release_date_only(self):
+        return self.filter and self.genre == 'all' and self.release_date != 9999
+
 
 class Movie:
     """ This holds details about a movie for an artist """
@@ -64,16 +74,15 @@ class Movie:
             :param primary_genre_name: The genre of the movie
         """
         self.track_name = track_name
-        self.release_date = release_date
+        self.release_date = extract_release_date(release_date)
         self.primary_genre_name = primary_genre_name
 
     def details(self):
-        det = {
+        return {
             "name": self.track_name,
             "release date": self.release_date,
             "genre": self.primary_genre_name
         }
-        return det
 
     def __str__(self):
         return self.track_name
@@ -93,6 +102,17 @@ class Movies:
         print(f"Info: Adding movie '{movie.__str__()}' for artist '{self.key.__str__()}'")
         self.movies.get(self.key).append(movie.details())
 
+    def all_movies(self):
+        return self.movies.get(self.key)
+
     def details(self):
         return json.dumps(self.movies)
 
+
+def extract_release_date(as_string):
+    try:
+        year, _, _ = as_string.split('T')[0].split('-')
+        return int(year)
+    except (AttributeError, ValueError):
+        # todo: do this better
+        return int(as_string)
