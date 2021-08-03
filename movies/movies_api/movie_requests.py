@@ -103,22 +103,34 @@ def _filtered(movies, key):
     else:
         filtered_movies = Movies(key)
         if key.filter_by_genre_only():
-            for movie in movies.all_movies():
-                track_name, release_date, genre = _details(movie)
-                if genre.lower() == key.get_genre().lower():
-                    filtered_movies.add(Movie(track_name, release_date, genre))
+            _filter_by_genre(filtered_movies, key, movies)
         elif key.filter_by_release_date_only():
-            for movie in movies.all_movies():
-                track_name, release_date, genre = _details(movie)
-                if release_date == key.get_release_date():
-                    filtered_movies.add(Movie(track_name, release_date, genre))
+            _filter_by_release_date(filtered_movies, key, movies)
         else:
-            # filter by both genre and release date
-            for movie in movies.all_movies():
-                track_name, release_date, genre = _details(movie)
-                if genre.lower() == key.get_genre().lower() and release_date == key.get_release_date():
-                    filtered_movies.add(Movie(track_name, release_date, genre))
+            _filter_by_genre_and_release_date(filtered_movies, key, movies)
         return filtered_movies
+
+
+def _filter_by_genre_and_release_date(filtered_movies, key, movies):
+    # filter by both genre and release date
+    for movie in movies.all_movies():
+        track_name, release_date, genre = _details(movie)
+        if genre.lower() == key.get_genre().lower() and release_date == key.get_release_date():
+            filtered_movies.add(Movie(track_name, release_date, genre))
+
+
+def _filter_by_release_date(filtered_movies, key, movies):
+    for movie in movies.all_movies():
+        track_name, release_date, genre = _details(movie)
+        if release_date == key.get_release_date():
+            filtered_movies.add(Movie(track_name, release_date, genre))
+
+
+def _filter_by_genre(filtered_movies, key, movies):
+    for movie in movies.all_movies():
+        track_name, release_date, genre = _details(movie)
+        if genre.lower() == key.get_genre().lower():
+            filtered_movies.add(Movie(track_name, release_date, genre))
 
 
 def _details(movie):

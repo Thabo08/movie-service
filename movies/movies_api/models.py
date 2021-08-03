@@ -20,7 +20,7 @@ def equality_tester(self_, clazz, other):
 
 
 class Key:
-    """ Encapsulates a search query used for lookups """
+    """ Encapsulates a search query object used for lookups """
 
     def __init__(self, firstname: str, lastname: str, genre='all', release_date=9999):
         """

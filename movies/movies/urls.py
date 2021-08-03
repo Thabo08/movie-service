@@ -19,5 +19,4 @@ from django.urls import path
 
 urlpatterns = [
     path('api/v1/', include('movies_api.urls')),
-    path('admin/', admin.site.urls),
 ]

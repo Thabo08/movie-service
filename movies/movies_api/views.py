@@ -8,10 +8,6 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def index(request):
-    return HttpResponse("Hello, world. You're at the polls index.")
-
-
 def actor_movies(request):
     try:
         key = validate_request(request)
