@@ -16,16 +16,18 @@ def equality_tester(self_, clazz, other):
 
 
 class Key:
-    """ Encapsulates a key used for lookups """
+    """ Encapsulates a search query used for lookups """
 
-    def __init__(self, firstname: str, lastname: str):
+    def __init__(self, firstname: str, lastname: str, genre='all', release_date=9999):
         """
         :param firstname: First name of an artist, eg, 'kevin' in 'Kevin Hart'
         :param lastname: Last name of an artist, eg, 'hart' in 'Kevin Hart'
         """
         self.firstname = firstname
         self.lastname = lastname
-        self.key = f'{firstname} {lastname}'
+        self.genre = genre
+        self.release_date = release_date
+        self.key = f'{firstname}_{lastname}'
 
     def __eq__(self, other):
         return equality_tester(self, Key, other)
@@ -34,7 +36,7 @@ class Key:
         return hash(self.key)
 
     def __str__(self):
-        return self.key
+        return self.key.replace("_", " ")
 
     def get_firstname(self):
         return self.firstname
@@ -42,8 +44,14 @@ class Key:
     def get_lastname(self):
         return self.lastname
 
+    def get_genre(self):
+        return self.genre
+
+    def get_release_date(self):
+        return self.release_date
+
     def as_key(self):
-        return f'{self.firstname}_{self.lastname}'
+        return self.key
 
 
 class Movie:

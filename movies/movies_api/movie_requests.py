@@ -134,5 +134,5 @@ class RequestHandler:
 
 # todo: Delete this - only for testing purposes
 def test_helper(key):
-    handler = RequestHandler.get_instance(StorageSpi(in_memory=False), ThirdParty())
+    handler = RequestHandler.get_instance(StorageSpi(in_memory=True), ThirdParty())
     return handler.get_details(key)
