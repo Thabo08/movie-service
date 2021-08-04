@@ -1,4 +1,4 @@
-[![workflow](https://github.com/Thabo08/movies/actions/workflows/main.yml/badge.svg?branch=main)](https://github.com/Thabo08/movies/actions/workflows/main.yml)
+[![workflow](https://github.com/Thabo08/movie-service/actions/workflows/main.yml/badge.svg?branch=main)](https://github.com/Thabo08/movie-service/actions/workflows/main.yml)
 
 # Movie Service
 Movie service is REST API that allows clients to search for movies of their favourite artists. The search functionality
