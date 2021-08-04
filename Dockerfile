@@ -6,6 +6,10 @@ RUN adduser -D movies_adduser
 
 WORKDIR /app
 
+RUN echo 'System permissions ...'
+RUN chown -R movies_adduser:movies_adduser ./
+USER movies_adduser
+
 RUN echo 'Copying application files ...'
 COPY movies/ ./movies/
 COPY requirements.txt requirements.txt
@@ -13,9 +17,11 @@ COPY requirements.txt requirements.txt
 RUN echo 'Installing application dependencies ...'
 RUN pip install -r requirements.txt
 
-RUN echo 'System permissions ...'
-RUN chown -R movies_adduser:movies_adduser ./
-USER movies_adduser
+RUN echo 'Performing migrations ...'
+RUN python ./movies/manage.py migrate
+
+RUN echo 'Running tests ...'
+RUN python ./movies/manage.py test movies_api
 
 EXPOSE 8000
 
