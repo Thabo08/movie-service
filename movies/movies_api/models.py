@@ -1,4 +1,6 @@
 import json
+from typing import Dict
+from typing import List
 
 from django.db import models
 import datetime
@@ -7,7 +9,8 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def equality_tester(self_, clazz, other):
+def equality_tester(self_, clazz, other) -> bool:
+    """ Returns True if instances of the same object are equal, False otherwise """
     if isinstance(other, clazz):
         for var in vars(self_):
             var_of_self = getattr(self_, var)
@@ -71,7 +74,7 @@ class Key:
 class Movie:
     """ This holds details about a movie for an artist """
 
-    def __init__(self, track_name, release_date, primary_genre_name):
+    def __init__(self, track_name: str, release_date: str, primary_genre_name: str):
         """"
             :param track_name: The name of the movie
             :param release_date: The date when the movie was released
@@ -81,7 +84,8 @@ class Movie:
         self.release_date = extract_release_date(release_date)
         self.primary_genre_name = primary_genre_name
 
-    def details(self):
+    def details(self) -> Dict[str, str]:
+        """ Gets the details of an artists movies as a dict """
         return {
             "name": self.track_name,
             "release date": self.release_date,
@@ -106,14 +110,16 @@ class Movies:
         logger.debug(f"Adding movie '{movie.__str__()}' for artist '{self.key.__str__()}'")
         self.movies.get(self.key).append(movie.details())
 
-    def all_movies(self):
+    def all_movies(self) -> List[Dict[str, str]]:
+        """ Gets a list of movie details for an artist """
         return self.movies.get(self.key)
 
     def details(self):
         return json.dumps(self.movies)
 
 
-def extract_release_date(as_string):
+def extract_release_date(as_string: str) -> int:
+    """ Takes in a string date and returns the year as int """
     try:
         year, _, _ = as_string.split('T')[0].split('-')
         return int(year)
